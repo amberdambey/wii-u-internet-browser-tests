@@ -1,0 +1,115 @@
+<html>
+	<head>
+		<title>Wii U GamePad Rotation Visualizer</title>
+	</head>
+	<body>
+		<canvas id="mainCan" width="980" height="514" style="position:absolute;left:0;top:0;">
+			<script>
+				var marblePosX=0.0;
+				var marblePosY=0.0;
+				var marbleVelX=0.0;
+				var marbleVelY=0.0;
+				var currentCol=0;
+				var colors=["#ffffff", "#00ff00", "#ff0000", "#ffff00", "#0000ff", "#ff00ff", "#00ffff"];
+				
+				var oldTime=new Date(Date.now());
+				var newTime;
+				var deltaTime;
+				var fbf=mainCan.getContext("2d");
+				
+				var framesCounted=0;
+				var timePassedSinceFrameReset=0.0;
+				var lastFrameRate=0;
+				
+				function frame() {
+					newTime=new Date(Date.now());
+					deltaTime=newTime.getMilliseconds()-oldTime.getMilliseconds();
+					if (deltaTime<=0) deltaTime+=1000;
+					deltaTime=deltaTime/1000.0;
+					oldTime=new Date(Date.now());
+					
+					fbf.clearRect(0, 0, mainCan.width, 55);
+					
+					wiiu.gamepad.update();
+					var marbleOldX=marblePosX;
+					var marbleOldY=marblePosY;
+					marbleVelX+=(-wiiu.gamepad.accX)*deltaTime*5;
+					marbleVelX*=1-(deltaTime*1);
+					marbleVelY+=(-wiiu.gamepad.accZ-.15)*deltaTime*5;
+					marbleVelY*=1-(deltaTime*1);
+					marblePosX+=marbleVelX*deltaTime*1000;
+					marblePosY+=marbleVelY*deltaTime*1000;
+					
+					marblePosY-=55;
+					if (marblePosX<0) {
+						marblePosX=-marblePosX;
+						marbleVelX=-marbleVelX;
+					}
+					if (marblePosY<0) {
+						marblePosY=-marblePosY;
+						marbleVelY=-marbleVelY;
+					}
+					marblePosY+=55;
+					
+					marblePosX=mainCan.width-marblePosX;
+					marblePosY=mainCan.height-marblePosY;
+					marbleVelX=-marbleVelX;
+					marbleVelY=-marbleVelY;
+					if (marblePosX<0) {
+						marblePosX=-marblePosX;
+						marbleVelX=-marbleVelX;
+					}
+					if (marblePosY<0) {
+						marblePosY=-marblePosY;
+						marbleVelY=-marbleVelY;
+					}
+					marblePosX=mainCan.width-marblePosX;
+					marblePosY=mainCan.height-marblePosY;
+					marbleVelX=-marbleVelX;
+					marbleVelY=-marbleVelY;
+					
+					// var marbleSize=Math.sqrt((marbleVelX*marbleVelX)+(marbleVelY*marbleVelY))*(1/deltaTime)*.1;
+					var marbleGap=Math.sqrt(((marblePosX-marbleOldX)*(marblePosX-marbleOldX))+((marblePosY-marbleOldY)*(marblePosY-marbleOldY)));
+					var marbleSize=1;
+					if ((wiiu.gamepad.hold&32768)!=0) {
+						currentCol++;
+						if (currentCol>=colors.length) currentCol=0;
+					}
+					if ((wiiu.gamepad.accY>=1.0)) {
+						fbf.clearRect(0, 0, mainCan.width, mainCan.height);
+						fbf.fillStyle="#000000";
+						fbf.fillRect(0, 0, mainCan.width, mainCan.height);
+					}
+					fbf.fillStyle=colors[currentCol];
+					fbf.fillRect(marblePosX, marblePosY, marbleSize+1, marbleSize+1);
+					for (var i=0; i<marbleGap; i+=2) {
+						var lerpBy=i/marbleGap;
+						fbf.fillRect((marbleOldX*lerpBy)+(marblePosX*(1-lerpBy)), (marbleOldY*lerpBy)+(marblePosY*(1-lerpBy)), marbleSize+1, marbleSize+1);
+					}
+					
+					// Framerate display
+					timePassedSinceFrameReset+=deltaTime;
+					framesCounted++;
+					if (timePassedSinceFrameReset>=1.0) {
+						timePassedSinceFrameReset-=1.0;
+						lastFrameRate=framesCounted;
+						framesCounted=0;
+					}
+					fbf.fillStyle="#000000";
+					fbf.font="50px sans-serif";
+					fbf.textAlign="left";
+					fbf.textBaseline="top";
+					fbf.fillText("FPS: "+lastFrameRate, 0, 0);
+					
+					setTimeout(frame, 1);
+				}
+				
+				setTimeout(function() {
+					fbf.fillStyle="#000000";
+					fbf.fillRect(0, 0, mainCan.width, mainCan.height);
+					frame();
+				}, 100);
+			</script>
+		</canvas>
+	</body>
+</html>
