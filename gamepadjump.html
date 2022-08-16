@@ -1,0 +1,167 @@
+<html>
+	<head>
+		<title>GamePad Jump</title>
+	</head>
+	<body>
+		<canvas id="mainCan" width="980" height="514" style="position:absolute;left:0;top:0;">
+			<script>
+				var marblePosX=490.0;
+				var marblePosY=100.0;
+				var marbleVelX=0.0;
+				var marbleVelY=0.0;
+				var rocketTimer=0.0;
+				var score=0;
+				var platforms=[{x:0,y:0,xVel:0,hasRocket:false},{x:0,y:0,xVel:0,hasRocket:false}];
+				platforms.length=20;
+				for (var i=0; i<platforms.length; i++) {
+					platforms[i]={x:Math.random(),y:(i*1.0)/(platforms.length*1.0),xVel:0,hasRocket:(Math.random()<.05)};
+					if (Math.random()<.1) {
+						platforms[i].xVel=(Math.random()<.5?.1:-.1);
+					} else {
+						platforms[i].xVel=0;
+					}
+					if (i==7) platforms[i].x=.5;
+				}
+				
+				var oldTime=new Date(Date.now());
+				var newTime;
+				var deltaTime;
+				var fbf=mainCan.getContext("2d");
+				
+				var framesCounted=0;
+				var timePassedSinceFrameReset=0.0;
+				var lastFrameRate=0;
+				
+				function frame() {
+					newTime=new Date(Date.now());
+					deltaTime=newTime.getMilliseconds()-oldTime.getMilliseconds();
+					if (deltaTime<=0) deltaTime+=1000;
+					deltaTime=deltaTime/1000.0;
+					oldTime=new Date(Date.now());
+					
+					fbf.clearRect(0, 0, mainCan.width, 55);
+					fbf.clearRect(0, 0, mainCan.width, mainCan.height);
+					fbf.fillStyle="#000000";
+					fbf.fillRect(0, 55, mainCan.width, mainCan.height-55);
+					
+					if (rocketTimer>0) rocketTimer-=deltaTime; else rocketTimer=0.0;
+					
+					// Draw platforms
+					fbf.fillStyle="#ffffff";
+					for (var i=0; i<platforms.length; i++) {
+						fbf.fillStyle="#ffffff";
+						platforms[i].y+=deltaTime*(rocketTimer>0?1:.1);
+						platforms[i].x+=deltaTime*platforms[i].xVel;
+						if (platforms[i].x>1) platforms[i].xVel=-Math.abs(platforms[i].xVel);
+						if (platforms[i].x<0) platforms[i].xVel=Math.abs(platforms[i].xVel);
+						if (platforms[i].y>=1.0) { // Respawn platforms which go off the screen
+							platforms[i].y--;
+							platforms[i].x=Math.random();
+							if (Math.random()<.1) {
+								platforms[i].xVel=(Math.random()<.5?.1:-.1);
+							} else {
+								platforms[i].xVel=0.0;
+							}
+							platforms[i].hasRocket=(Math.random()<.05);
+							score++;
+						}
+						fbf.fillRect((platforms[i].x*mainCan.width)-35, (platforms[i].y*mainCan.height), 70, 10);
+						if (platforms[i].hasRocket) {
+							fbf.fillRect((platforms[i].x*mainCan.width)-20, (platforms[i].y*mainCan.height)-45, 40, 40);
+						}
+						
+						// Handle collision
+						var platScrnX=platforms[i].x*mainCan.width;
+						var platScrnY=platforms[i].y*mainCan.height;
+						if (Math.abs(marblePosX-platScrnX)<35) {
+							if (marbleVelY>0) {
+								if (((platScrnY-marblePosY)<0) && ((platScrnY-marblePosY)>2*(-marbleVelY/deltaTime))) {
+									// Snap up to the platform and jump
+									marblePosY=platScrnY;
+									marbleVelY=-.5;
+									fbf.fillStyle="#00ff00";
+									fbf.fillRect(0, 0, 100, 100);
+									if (platforms[i].hasRocket) {
+										rocketTimer=10.0;
+									}
+								}
+							}
+						}
+					}
+					
+					wiiu.gamepad.update();
+					var marbleOldX=marblePosX;
+					var marbleOldY=marblePosY;
+					marbleVelX+=(-wiiu.gamepad.accX)*deltaTime*2;
+					marbleVelX*=1-(deltaTime*1);
+					if (rocketTimer<=0.0) marbleVelY+=deltaTime; else {marbleVelY=0.0;  marblePosY=100.0;}
+					marblePosX+=marbleVelX*deltaTime*1000;
+					marblePosY+=marbleVelY*deltaTime*1000;
+					
+					marblePosY-=55;
+					if (marblePosX<0) {
+						marblePosX=-marblePosX;
+						marbleVelX=-marbleVelX;
+					}
+					marblePosY+=55;
+					
+					marblePosX=mainCan.width-marblePosX;
+					marblePosY=mainCan.height-marblePosY;
+					marbleVelX=-marbleVelX;
+					marbleVelY=-marbleVelY;
+					if (marblePosX<0) {
+						marblePosX=-marblePosX;
+						marbleVelX=-marbleVelX;
+					}
+					if (marblePosY<0) {
+						fbf.fillStyle="#ff0000";
+						fbf.fillRect(0, 0, mainCan.width, mainCan.height);
+						
+						fbf.fillStyle="#ffffff";
+						fbf.font="50px sans-serif";
+						fbf.textAlign="center";
+						fbf.textBaseline="bottom";
+						fbf.fillText("You lose", mainCan.width*.5, mainCan.height*.5);
+						fbf.textBaseline="top";
+						fbf.fillText("Score: "+score, mainCan.width*.5, mainCan.height*.5);
+						
+						return;
+						marblePosY=0;
+						marbleVelY=.8;
+					}
+					marblePosX=mainCan.width-marblePosX;
+					marblePosY=mainCan.height-marblePosY;
+					marbleVelX=-marbleVelX;
+					marbleVelY=-marbleVelY;
+					
+					var marbleGap=Math.sqrt(((marblePosX-marbleOldX)*(marblePosX-marbleOldX))+((marblePosY-marbleOldY)*(marblePosY-marbleOldY)));
+					var marbleSize=1;
+					fbf.fillStyle="#ffffff";
+					fbf.fillRect(marblePosX, marblePosY, marbleSize+1, marbleSize+1);
+					
+					// Framerate display
+					timePassedSinceFrameReset+=deltaTime;
+					framesCounted++;
+					if (timePassedSinceFrameReset>=1.0) {
+						timePassedSinceFrameReset-=1.0;
+						lastFrameRate=framesCounted;
+						framesCounted=0;
+					}
+					fbf.fillStyle="#000000";
+					fbf.font="50px sans-serif";
+					fbf.textAlign="left";
+					fbf.textBaseline="top";
+					fbf.fillText("Score: "+score+", FPS: "+lastFrameRate, 0, 0);
+					
+					setTimeout(frame, 1);
+				}
+				
+				setTimeout(function() {
+					fbf.fillStyle="#000000";
+					fbf.fillRect(0, 0, mainCan.width, mainCan.height);
+					frame();
+				}, 100);
+			</script>
+		</canvas>
+	</body>
+</html>
