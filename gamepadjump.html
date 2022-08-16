@@ -48,9 +48,11 @@
 					
 					// Draw platforms
 					fbf.fillStyle="#ffffff";
+					var platformRiseSpeed=.1;
+					if (marblePosY<100) platformRiseSpeed=.3;
 					for (var i=0; i<platforms.length; i++) {
 						fbf.fillStyle="#ffffff";
-						platforms[i].y+=deltaTime*(rocketTimer>0?1:.1);
+						platforms[i].y+=deltaTime*(rocketTimer>0?1:platformRiseSpeed);
 						platforms[i].x+=deltaTime*platforms[i].xVel;
 						if (platforms[i].x>1) platforms[i].xVel=-Math.abs(platforms[i].xVel);
 						if (platforms[i].x<0) platforms[i].xVel=Math.abs(platforms[i].xVel);
@@ -92,7 +94,7 @@
 					var marbleOldY=marblePosY;
 					marbleVelX+=(-wiiu.gamepad.accX)*deltaTime*2;
 					marbleVelX*=1-(deltaTime*1);
-					if (rocketTimer<=0.0) marbleVelY+=deltaTime; else {marbleVelY=0.0;  marblePosY=100.0;}
+					if (rocketTimer<=0.0) marbleVelY+=deltaTime; else {marbleVelY=0.0;  marblePosY=150.0;}
 					marblePosX+=marbleVelX*deltaTime*1000;
 					marblePosY+=marbleVelY*deltaTime*1000;
 					
