@@ -133,9 +133,9 @@
 					marbleVelY=-marbleVelY;
 					
 					var marbleGap=Math.sqrt(((marblePosX-marbleOldX)*(marblePosX-marbleOldX))+((marblePosY-marbleOldY)*(marblePosY-marbleOldY)));
-					var marbleSize=1;
+					var marbleSize=4;
 					fbf.fillStyle="#ffffff";
-					fbf.fillRect(marblePosX, marblePosY, marbleSize+1, marbleSize+1);
+					fbf.fillRect(marblePosX-(marbleSize*.5), marblePosY-(marbleSize*1), marbleSize+1, marbleSize);
 					
 					// Framerate display
 					timePassedSinceFrameReset+=deltaTime;
